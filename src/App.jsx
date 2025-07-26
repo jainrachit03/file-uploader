@@ -1,0 +1,158 @@
+import React, { useState } from 'react';
+import Navbar from './Navbar';
+import LoadingSpinner from './components/LoadingSpinner';
+
+const App = () => {
+  const [file, setFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [sharableLink, setSharableLink] = useState("");
+
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
+
+ const handleUpload = async () => {
+  if (!file) return alert("Please select a file first");
+
+  setIsUploading(true);
+  setProgress(0);
+  setSharableLink("");
+
+  try {
+    // 1. Convert file to base64
+    const toBase64 = (file) =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result.split(',')[1]); // remove prefix
+        reader.onerror = (error) => reject(error);
+      });
+
+    const base64Content = await toBase64(file);
+
+    // 2. Send to Lambda function
+    const response = await fetch("https://dnbcyl6wjpxp2meblqbhqo7kiq0mlbhw.lambda-url.ap-south-1.on.aws/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fileName: file.name,
+        fileContentBase64: base64Content,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) throw new Error(result.error || "Upload failed");
+
+    // Success
+    setSharableLink(result.url);
+    alert("✅ File uploaded successfully!");
+  } catch (error) {
+    console.error("Upload failed:", error);
+    alert("❌ Upload failed!");
+  }
+
+  setIsUploading(false);
+  setProgress(100);
+  setFile(null);
+};
+
+
+const toBase64 = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(",")[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+
+
+  return (
+
+    <div className="bg-gradient-to-br from-white to-blue-50 min-h-screen scroll-smooth">
+      <Navbar />
+
+      <section id="home" className="pt-28 px-6 md:px-20 pb-20 text-center animate-fadeIn">
+        <h1 className="text-4xl font-bold text-blue-700 mb-4">Welcome to File Uploader</h1>
+        <p className="text-gray-600 text-lg">Smooth. Fast. Secure.</p>
+      </section>
+
+      <section id="features" className="px-6 md:px-20 py-16 animate-fadeIn">
+        <h2 className="text-2xl font-bold text-blue-600 mb-6">🌟 Features</h2>
+        <ul className="space-y-4 text-gray-700">
+          <li>⚡ Fast Uploads with Progress Tracking</li>
+          <li>🔒 Secure AWS S3 Integration</li>
+          <li>🎨 Beautiful, Responsive UI</li>
+          <li>📁 Multiple File Format Support</li>
+        </ul>
+      </section>
+
+      <section id="upload" className="px-6 md:px-20 py-16 animate-fadeIn">
+        <h2 className="text-2xl font-bold text-blue-600 mb-6">📤 Upload Your File</h2>
+
+        <div className="bg-white shadow-lg p-6 rounded-xl max-w-md mx-auto border border-blue-100">
+          <input
+            type="file"
+            onChange={handleFileChange}
+            className="mb-4 w-full text-gray-600"
+          />
+          <button
+            onClick={handleUpload}
+            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-all duration-300 w-full"
+            disabled={isUploading}
+          >
+            {isUploading ? 'Uploading...' : 'Upload'}
+          </button>
+
+          {isUploading && (
+            <div className="mt-4 space-y-2">
+              <LoadingSpinner />
+              <div className="w-full bg-gray-200 rounded-full h-4">
+                <div
+                  className="bg-blue-600 h-4 rounded-full transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <p className="text-sm text-blue-600">{progress}%</p>
+            </div>
+          )}
+          {sharableLink && (
+  <div className="mt-4 text-sm text-green-600 break-words">
+    <p>✅ File uploaded successfully:</p>
+    <a
+      href={sharableLink}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-blue-600 underline"
+    >
+      {sharableLink}
+    </a>
+  </div>
+)}
+
+        </div>
+      </section>
+
+      <section id="contact" className="px-6 md:px-20 py-16 animate-fadeIn">
+  <h2 className="text-2xl font-bold text-blue-600 mb-4">📬 Contact Us</h2>
+  <p className="text-gray-700 max-w-xl mx-auto">
+  For any queries or suggestions, feel free to reach out at 
+  <a href="mailto:jainrachit310@gmail.com" className="text-blue-600 underline ml-1">
+    jainrachit310@gmail.com
+  </a>.
+</p>
+
+</section>
+
+
+      <footer className="text-center text-gray-500 text-sm py-6 border-t border-gray-200">
+  © {new Date().getFullYear()} FileUploader. All rights reserved.
+</footer>
+
+    </div>
+  );
+};
+
+export default App;
