@@ -29,6 +29,12 @@ const App = () => {
   type: file.type,
 });
 
+console.log("Sending to Lambda:", JSON.stringify({
+  fileName: file.name,
+  fileType: file.type,
+}));
+
+
     // Step 1: Get Presigned URL from Lambda
     const presignRes = await fetch("https://dnbcyl6wjpxp2meblqbhqo7kiq0mlbhw.lambda-url.ap-south-1.on.aws/", {
       method: "POST",
