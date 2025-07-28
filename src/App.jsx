@@ -27,8 +27,8 @@ const App = () => {
 
   console.log("Selected file:", file);
   console.log("Sending to Lambda:", {
-    fileName: file.name,
-    fileType: file.type,
+    fileName: file?.name,
+    fileType: file?.type,
   });
 
   setIsUploading(true);
