@@ -24,6 +24,11 @@ const App = () => {
   setSharableLink("");
 
   try {
+    console.log("Uploading file:", {
+  name: file.name,
+  type: file.type,
+});
+
     // Step 1: Get Presigned URL from Lambda
     const presignRes = await fetch("https://dnbcyl6wjpxp2meblqbhqo7kiq0mlbhw.lambda-url.ap-south-1.on.aws/", {
       method: "POST",
