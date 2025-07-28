@@ -7,6 +7,9 @@ const App = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [sharableLink, setSharableLink] = useState("");
+  const REGION = "ap-south-1";
+const BUCKET = "file-share-rachit-jain";
+
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -31,12 +34,31 @@ const App = () => {
 
     const { url } = await presignRes.json();
 
-    // Step 2: Upload directly to S3
-    await fetch(url, {
-      method: "PUT",
-      headers: { "Content-Type": file.type },
-      body: file,
-    });
+    // Step 2: Upload to S3 with progress tracking
+await new Promise((resolve, reject) => {
+  const xhr = new XMLHttpRequest();
+  xhr.open("PUT", url, true);
+  xhr.setRequestHeader("Content-Type", file.type);
+
+  xhr.upload.onprogress = (event) => {
+    if (event.lengthComputable) {
+      const percent = Math.round((event.loaded / event.total) * 100);
+      setProgress(percent);
+    }
+  };
+
+  xhr.onload = () => {
+    if (xhr.status === 200) {
+      resolve();
+    } else {
+      reject(new Error("Upload failed with status " + xhr.status));
+    }
+  };
+
+  xhr.onerror = () => reject(new Error("XHR upload failed"));
+  xhr.send(file);
+});
+
 
     const publicUrl = `https://${BUCKET}.s3.${REGION}.amazonaws.com/${file.name}`;
     setSharableLink(publicUrl);
