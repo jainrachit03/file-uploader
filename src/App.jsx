@@ -16,26 +16,23 @@ const App = () => {
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
   };
-  const handleUpload = async () => {
-  if (!file) return alert("Please select a file first");
+ const handleUpload = async () => {
+  if (!file) {
+    alert("Please select a file first");
+    return;
+  }
+
+  console.log("Selected file:", file);
+  console.log("Sending to Lambda:", {
+    fileName: file.name,
+    fileType: file.type,
+  });
 
   setIsUploading(true);
   setProgress(0);
   setSharableLink("");
 
   try {
-    console.log("Uploading file:", {
-  name: file.name,
-  type: file.type,
-});
-
-console.log("Sending to Lambda:", JSON.stringify({
-  fileName: file.name,
-  fileType: file.type,
-}));
-
-
-    // Step 1: Get Presigned URL from Lambda
     const presignRes = await fetch("https://dnbcyl6wjpxp2meblqbhqo7kiq0mlbhw.lambda-url.ap-south-1.on.aws/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -45,40 +42,40 @@ console.log("Sending to Lambda:", JSON.stringify({
       }),
     });
 
+    if (!presignRes.ok) {
+      const errText = await presignRes.text();
+      throw new Error(`Lambda error: ${errText}`);
+    }
+
     const { url } = await presignRes.json();
 
-    // Step 2: Upload to S3 with progress tracking
-await new Promise((resolve, reject) => {
-  const xhr = new XMLHttpRequest();
-  xhr.open("PUT", url, true);
-  xhr.setRequestHeader("Content-Type", file.type);
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("PUT", url, true);
+      xhr.setRequestHeader("Content-Type", file.type);
 
-  xhr.upload.onprogress = (event) => {
-    if (event.lengthComputable) {
-      const percent = Math.round((event.loaded / event.total) * 100);
-      setProgress(percent);
-    }
-  };
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          setProgress(percent);
+        }
+      };
 
-  xhr.onload = () => {
-    if (xhr.status === 200) {
-      resolve();
-    } else {
-      reject(new Error("Upload failed with status " + xhr.status));
-    }
-  };
+      xhr.onload = () => {
+        if (xhr.status === 200) resolve();
+        else reject(new Error("Upload failed with status " + xhr.status));
+      };
 
-  xhr.onerror = () => reject(new Error("XHR upload failed"));
-  xhr.send(file);
-});
-
+      xhr.onerror = () => reject(new Error("XHR upload failed"));
+      xhr.send(file);
+    });
 
     const publicUrl = `https://${BUCKET}.s3.${REGION}.amazonaws.com/${file.name}`;
     setSharableLink(publicUrl);
     alert("✅ File uploaded successfully!");
   } catch (error) {
     console.error("Upload failed:", error);
-    alert("❌ Upload failed!");
+    alert("❌ Upload failed!\n" + error.message);
   }
 
   setIsUploading(false);
