@@ -160,6 +160,10 @@ const App = () => {
             onChange={handleFileChange}
             className="mb-4 w-full text-gray-600"
           />
+          <p className="text-sm text-gray-500">
+  Selected File: {file?.name || "None"}
+</p>
+
           <button
             onClick={handleUpload}
             className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-all duration-300 w-full"
