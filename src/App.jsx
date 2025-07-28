@@ -2,14 +2,16 @@ import React, { useState } from 'react';
 import Navbar from './Navbar';
 import LoadingSpinner from './components/LoadingSpinner';
 
+ const REGION = "ap-south-1";
+const BUCKET = "file-share-rachit-jain";
+
+
 const App = () => {
   const [file, setFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [sharableLink, setSharableLink] = useState("");
-  const REGION = "ap-south-1";
-const BUCKET = "file-share-rachit-jain";
-
+ 
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
