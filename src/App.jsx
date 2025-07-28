@@ -11,54 +11,94 @@ const App = () => {
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
   };
-
   const handleUpload = async () => {
-    if (!file) return alert("Please select a file first");
+  if (!file) return alert("Please select a file first");
 
-    setIsUploading(true);
-    setProgress(0);
-    setSharableLink("");
+  setIsUploading(true);
+  setProgress(0);
+  setSharableLink("");
 
-    try {
-      const toBase64 = (file) =>
-        new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.readAsDataURL(file);
-          reader.onload = () => resolve(reader.result.split(',')[1]); // remove prefix
-          reader.onerror = (error) => reject(error);
-        });
+  try {
+    // Step 1: Get Presigned URL from Lambda
+    const presignRes = await fetch("https://dnbcyl6wjpxp2meblqbhqo7kiq0mlbhw.lambda-url.ap-south-1.on.aws/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fileName: file.name,
+        fileType: file.type,
+      }),
+    });
 
-      const base64Content = await toBase64(file);
+    const { url } = await presignRes.json();
 
-      const response = await fetch("https://dnbcyl6wjpxp2meblqbhqo7kiq0mlbhw.lambda-url.ap-south-1.on.aws/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fileName: file.name,
-          fileContentBase64: base64Content,
-        }),
-      });
+    // Step 2: Upload directly to S3
+    await fetch(url, {
+      method: "PUT",
+      headers: { "Content-Type": file.type },
+      body: file,
+    });
 
-      let result;
+    const publicUrl = `https://${BUCKET}.s3.${REGION}.amazonaws.com/${file.name}`;
+    setSharableLink(publicUrl);
+    alert("✅ File uploaded successfully!");
+  } catch (error) {
+    console.error("Upload failed:", error);
+    alert("❌ Upload failed!");
+  }
 
-      if (response.ok) {
-        result = await response.json();
-        setSharableLink(result.url);
-        alert("✅ File uploaded successfully!");
-      } else {
-        const errorText = await response.text();
-        console.error("Server error:", errorText);
-        alert("❌ Upload failed!\n" + errorText);
-      }
-    } catch (error) {
-      console.error("Upload failed:", error);
-      alert("❌ Upload failed! " + error.message);
-    }
+  setIsUploading(false);
+  setProgress(100);
+  setFile(null);
+};
 
-    setIsUploading(false);
-    setProgress(100);
-    setFile(null);
-  };
+
+  // const handleUpload = async () => {
+  //   if (!file) return alert("Please select a file first");
+
+  //   setIsUploading(true);
+  //   setProgress(0);
+  //   setSharableLink("");
+
+  //   try {
+  //     const toBase64 = (file) =>
+  //       new Promise((resolve, reject) => {
+  //         const reader = new FileReader();
+  //         reader.readAsDataURL(file);
+  //         reader.onload = () => resolve(reader.result.split(',')[1]); // remove prefix
+  //         reader.onerror = (error) => reject(error);
+  //       });
+
+  //     const base64Content = await toBase64(file);
+
+  //     const response = await fetch("https://dnbcyl6wjpxp2meblqbhqo7kiq0mlbhw.lambda-url.ap-south-1.on.aws/", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({
+  //         fileName: file.name,
+  //         fileContentBase64: base64Content,
+  //       }),
+  //     });
+
+  //     let result;
+
+  //     if (response.ok) {
+  //       result = await response.json();
+  //       setSharableLink(result.url);
+  //       alert("✅ File uploaded successfully!");
+  //     } else {
+  //       const errorText = await response.text();
+  //       console.error("Server error:", errorText);
+  //       alert("❌ Upload failed!\n" + errorText);
+  //     }
+  //   } catch (error) {
+  //     console.error("Upload failed:", error);
+  //     alert("❌ Upload failed! " + error.message);
+  //   }
+
+  //   setIsUploading(false);
+  //   setProgress(100);
+  //   setFile(null);
+  // };
 
   return (
     <div className="bg-gradient-to-br from-white to-blue-50 min-h-screen scroll-smooth">
