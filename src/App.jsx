@@ -14,8 +14,11 @@ const App = () => {
  
 
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-  };
+  const selectedFile = e.target.files[0];
+  console.log("File selected:", selectedFile);
+  setFile(selectedFile);
+};
+
  const handleUpload = async () => {
   if (!file) {
     alert("Please select a file first");
@@ -159,6 +162,7 @@ const App = () => {
             type="file"
             onChange={handleFileChange}
             className="mb-4 w-full text-gray-600"
+
           />
           <p className="text-sm text-gray-500">
   Selected File: {file?.name || "None"}
