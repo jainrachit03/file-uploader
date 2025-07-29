@@ -21,6 +21,7 @@ const App = () => {
 
  const handleUpload = async () => {
   console.log("Upload button clicked");
+<button onClick={handleUpload} type="button">Upload</button>
 
   if (!file) {
     alert("Please select a file first");
