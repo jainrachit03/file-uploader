@@ -19,26 +19,15 @@ const App = () => {
   setFile(selectedFile);
 };
 
- const handleUpload = async () => {
-  console.log("Upload button clicked");
-<button onClick={handleUpload} type="button">Upload</button>
-
-  if (!file) {
-    alert("Please select a file first");
-    return;
-  }
-
-  console.log("Selected file:", file);
-  console.log("Sending to Lambda:", {
-    fileName: file?.name,
-    fileType: file?.type,
-  });
+const handleUpload = async () => {
+  if (!file) return alert("Please select a file first");
 
   setIsUploading(true);
   setProgress(0);
   setSharableLink("");
 
   try {
+    // Step 1: Get Presigned PUT URL from Lambda
     const presignRes = await fetch("https://dnbcyl6wjpxp2meblqbhqo7kiq0mlbhw.lambda-url.ap-south-1.on.aws/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -48,16 +37,12 @@ const App = () => {
       }),
     });
 
-    if (!presignRes.ok) {
-      const errText = await presignRes.text();
-      throw new Error(`Lambda error: ${errText}`);
-    }
+    const { url: uploadUrl } = await presignRes.json();
 
-    const { url } = await presignRes.json();
-
+    // Step 2: Upload to S3 with progress
     await new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open("PUT", url, true);
+      xhr.open("PUT", uploadUrl, true);
       xhr.setRequestHeader("Content-Type", file.type);
 
       xhr.upload.onprogress = (event) => {
@@ -76,18 +61,99 @@ const App = () => {
       xhr.send(file);
     });
 
-    const publicUrl = `https://${BUCKET}.s3.${REGION}.amazonaws.com/${file.name}`;
-    setSharableLink(publicUrl);
+    // Step 3: Get Presigned GET URL from Lambda
+    const getLinkRes = await fetch("https://dnbcyl6wjpxp2meblqbhqo7kiq0mlbhw.lambda-url.ap-south-1.on.aws/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fileName: file.name,
+        action: "get", // This tells Lambda to generate a GET (download) URL
+      }),
+    });
+
+    const { url: downloadUrl } = await getLinkRes.json();
+    setSharableLink(downloadUrl);
     alert("✅ File uploaded successfully!");
   } catch (error) {
     console.error("Upload failed:", error);
-    alert("❌ Upload failed!\n" + error.message);
+    alert("❌ Upload failed!");
   }
 
   setIsUploading(false);
   setProgress(100);
   setFile(null);
 };
+
+
+//  const handleUpload = async () => {
+//   console.log("Upload button clicked");
+// <button onClick={handleUpload} type="button">Upload</button>
+
+//   if (!file) {
+//     alert("Please select a file first");
+//     return;
+//   }
+
+//   console.log("Selected file:", file);
+//   console.log("Sending to Lambda:", {
+//     fileName: file?.name,
+//     fileType: file?.type,
+//   });
+
+//   setIsUploading(true);
+//   setProgress(0);
+//   setSharableLink("");
+
+//   try {
+//     const presignRes = await fetch("https://dnbcyl6wjpxp2meblqbhqo7kiq0mlbhw.lambda-url.ap-south-1.on.aws/", {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify({
+//         fileName: file.name,
+//         fileType: file.type,
+//       }),
+//     });
+
+//     if (!presignRes.ok) {
+//       const errText = await presignRes.text();
+//       throw new Error(`Lambda error: ${errText}`);
+//     }
+
+//     const { url } = await presignRes.json();
+
+//     await new Promise((resolve, reject) => {
+//       const xhr = new XMLHttpRequest();
+//       xhr.open("PUT", url, true);
+//       xhr.setRequestHeader("Content-Type", file.type);
+
+//       xhr.upload.onprogress = (event) => {
+//         if (event.lengthComputable) {
+//           const percent = Math.round((event.loaded / event.total) * 100);
+//           setProgress(percent);
+//         }
+//       };
+
+//       xhr.onload = () => {
+//         if (xhr.status === 200) resolve();
+//         else reject(new Error("Upload failed with status " + xhr.status));
+//       };
+
+//       xhr.onerror = () => reject(new Error("XHR upload failed"));
+//       xhr.send(file);
+//     });
+
+//     const publicUrl = `https://${BUCKET}.s3.${REGION}.amazonaws.com/${file.name}`;
+//     setSharableLink(publicUrl);
+//     alert("✅ File uploaded successfully!");
+//   } catch (error) {
+//     console.error("Upload failed:", error);
+//     alert("❌ Upload failed!\n" + error.message);
+//   }
+
+//   setIsUploading(false);
+//   setProgress(100);
+//   setFile(null);
+// };
 
 
   // const handleUpload = async () => {
