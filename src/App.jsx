@@ -20,6 +20,8 @@ const App = () => {
 };
 
  const handleUpload = async () => {
+  console.log("Upload button clicked");
+
   if (!file) {
     alert("Please select a file first");
     return;
