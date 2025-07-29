@@ -19,6 +19,18 @@ const App = () => {
   setFile(selectedFile);
 };
 
+async function shortenUrl(longUrl) {
+  try {
+    const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
+    const shortUrl = await res.text();
+    return shortUrl;
+  } catch (err) {
+    console.error("URL shortening failed", err);
+    return longUrl;
+  }
+}
+
+
 const handleUpload = async () => {
   if (!file) return alert("Please select a file first");
 
@@ -72,7 +84,8 @@ const handleUpload = async () => {
     });
 
     const { url: downloadUrl } = await getLinkRes.json();
-    setSharableLink(downloadUrl);
+const shortUrl = await shortenUrl(downloadUrl);
+setSharableLink(shortUrl);
     alert("✅ File uploaded successfully!");
   } catch (error) {
     console.error("Upload failed:", error);
