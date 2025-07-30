@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useRef } from "react";
 import Navbar from './Navbar';
 import LoadingSpinner from './components/LoadingSpinner';
 
@@ -271,19 +272,31 @@ setSharableLink(shortUrl);
             </div>
           )}
 
-          {sharableLink && (
-            <div className="mt-4 text-sm text-green-600 break-words">
-              <p>✅ File uploaded successfully:</p>
-              <a
-                href={sharableLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 underline"
-              >
-                {sharableLink}
-              </a>
-            </div>
-          )}
+         {sharableLink && (
+  <div className="mt-4 text-sm text-green-600 break-words">
+    <p>✅ File uploaded successfully:</p>
+    <div className="flex items-center space-x-2">
+      <a
+        href={sharableLink}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-blue-600 underline break-all"
+      >
+        {sharableLink}
+      </a>
+      <button
+        onClick={() => {
+          navigator.clipboard.writeText(sharableLink);
+          alert("🔗 Link copied to clipboard!");
+        }}
+        className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+      >
+        Copy
+      </button>
+    </div>
+  </div>
+)}
+
         </div>
       </section>
 
