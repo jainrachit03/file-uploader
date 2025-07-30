@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useRef } from "react";
+import React, { useState, useRef, useCallback } from 'react';
+
 import Navbar from './Navbar';
 import LoadingSpinner from './components/LoadingSpinner';
 
@@ -40,7 +40,6 @@ const handleUpload = async () => {
   setSharableLink("");
 
   try {
-    // Step 1: Get Presigned PUT URL from Lambda
     const presignRes = await fetch("https://dnbcyl6wjpxp2meblqbhqo7kiq0mlbhw.lambda-url.ap-south-1.on.aws/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -52,7 +51,6 @@ const handleUpload = async () => {
 
     const { url: uploadUrl } = await presignRes.json();
 
-    // Step 2: Upload to S3 with progress
     await new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open("PUT", uploadUrl, true);
@@ -74,14 +72,13 @@ const handleUpload = async () => {
       xhr.send(file);
     });
 
-    // Step 3: Get Presigned GET URL from Lambda
     const getLinkRes = await fetch("https://dnbcyl6wjpxp2meblqbhqo7kiq0mlbhw.lambda-url.ap-south-1.on.aws/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         fileName: file.name,
-        action: "get", // This tells Lambda to generate a GET (download) URL
-      }),
+        action: "get", 
+     }),
     });
 
     const { url: downloadUrl } = await getLinkRes.json();
@@ -241,15 +238,30 @@ setSharableLink(shortUrl);
         <h2 className="text-2xl font-bold text-blue-600 mb-6">📤 Upload Your File</h2>
 
         <div className="bg-white shadow-lg p-6 rounded-xl max-w-md mx-auto border border-blue-100">
-          <input
-            type="file"
-            onChange={handleFileChange}
-            className="mb-4 w-full text-gray-600"
+          <div
+  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all duration-200 ${
+    file ? 'border-green-400 bg-green-50' : 'border-blue-300 hover:bg-blue-50'
+  }`}
+  onDrop={(e) => {
+    e.preventDefault();
+    const droppedFile = e.dataTransfer.files[0];
+    console.log("Dropped file:", droppedFile);
+    setFile(droppedFile);
+  }}
+  onDragOver={(e) => e.preventDefault()}
+  onClick={() => document.getElementById("fileInput").click()}
+>
+  <p className="text-sm text-gray-500">
+    {file ? `Selected File: ${file.name}` : "Drag and drop your file here or click to browse"}
+  </p>
+  <input
+    id="fileInput"
+    type="file"
+    onChange={handleFileChange}
+    className="hidden"
+  />
+</div>
 
-          />
-          <p className="text-sm text-gray-500">
-  Selected File: {file?.name || "None"}
-</p>
 
           <button
             onClick={handleUpload}
